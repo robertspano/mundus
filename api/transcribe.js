@@ -2,7 +2,7 @@
 // Notar OpenAI Whisper (styður íslensku). Lykillinn er geymdur sem
 // umhverfisbreyta OPENAI_API_KEY í Vercel (aldrei í kóðanum).
 //
-// Frontendið (radd.html) sendir hrátt hljóð (audio/mp4 eða audio/webm) með POST.
+// Frontendið (radd.html) sendir hrátt hljóð (audio/wav úr AudioContext) með POST.
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -25,12 +25,16 @@ module.exports = async (req, res) => {
       res.status(400).json({ error: 'Engin hljóðgögn bárust.' });
       return;
     }
+    if (audio.length > 4.5e6) {
+      res.status(413).json({ error: 'Upptakan er of stór (hámark ~4 MB). Reyndu styttra verkefni.' });
+      return;
+    }
 
-    const contentType = req.headers['content-type'] || 'audio/mp4';
+    const contentType = req.headers['content-type'] || 'audio/wav';
     const ext = contentType.includes('webm') ? 'webm'
               : contentType.includes('ogg')  ? 'ogg'
-              : contentType.includes('wav')  ? 'wav'
-              : 'mp4';
+              : contentType.includes('mp4') || contentType.includes('m4a') ? 'mp4'
+              : 'wav';
 
     const form = new FormData();
     form.append('file', new Blob([audio], { type: contentType }), 'audio.' + ext);

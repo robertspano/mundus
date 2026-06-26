@@ -701,7 +701,8 @@ if(!useWebSpeech){
    MediaRecorder er ótraust á iOS, svo við tökum upp hrátt PCM gegnum AudioContext,
    búum til WAV (16 kHz mónó) sjálf og sendum á /api/transcribe. Sýnileg staða á hverju skrefi. */
 let audioCtx=null, srcNode=null, procNode=null, muteNode=null, recStream=null;
-let pcmChunks=[], pcmLen=0, recRate=44100, recording=false;
+let pcmChunks=[], pcmLen=0, recRate=44100, recording=false, recInFlight=false;
+let procFired=false, watchdog=null;
 
 function setRecUI(on){
   const w=$('micwrap').parentElement;
@@ -711,28 +712,42 @@ function setRecUI(on){
 function recStatus(msg){ $('hint').innerHTML=msg; }
 
 async function startRecording(){
-  if(recording) return;
+  if(recording || recInFlight) return;
+  recInFlight=true;
+  // loka hvers kyns gömlu samhengi (t.d. eftir bakgrunns-flipa) áður en nýtt er búið til
+  if(audioCtx){ try{ audioCtx.close(); }catch(e){} audioCtx=null; }
+  procNode=srcNode=muteNode=null;
+
   const AC = window.AudioContext || window.webkitAudioContext;
   if(!AC || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-    recStatus('Vafrinn styður ekki hljóðnema — notaðu 🎤 á lyklaborðinu'); focusDictation(); return;
+    recInFlight=false; recStatus('Vafrinn styður ekki hljóðnema — notaðu 🎤 á lyklaborðinu'); focusDictation(); return;
   }
   // AudioContext verður að verða til/ræsast INNAN smellsins (iOS-krafa) — gerum það fyrst.
   try{ audioCtx = new AC(); if(audioCtx.resume) audioCtx.resume(); }
-  catch(e){ recStatus('Gat ekki ræst hljóð: '+(e.message||e)); return; }
+  catch(e){ recInFlight=false; recStatus('Gat ekki ræst hljóð: '+(e.message||e)); return; }
 
   recStatus('Bið um aðgang að hljóðnema…');
   try{
     recStream = await navigator.mediaDevices.getUserMedia({audio:true});
   }catch(err){
-    cleanupRec(); recStatus('🔇 Aðgangur hafnað — ýttu „Allow" og reyndu aftur'); return;
+    cleanupRec(); recInFlight=false;
+    const n=(err&&err.name)||'';
+    if(n==='NotAllowedError'||n==='SecurityError'||n==='PermissionDeniedError')
+      recStatus('🔇 Aðgangur að hljóðnema hafnað. Leyfðu hann (Stillingar ▸ Safari ▸ Hljóðnemi) og reyndu aftur.');
+    else if(n==='NotFoundError') recStatus('Hljóðnemi fannst ekki á tækinu');
+    else recStatus('🔇 Gat ekki opnað hljóðnema: '+(n||err));
+    return;
   }
   try{
+    if(audioCtx.state!=='running' && audioCtx.resume){ try{ await audioCtx.resume(); }catch(e){} }
     recRate = audioCtx.sampleRate || 44100;
     srcNode = audioCtx.createMediaStreamSource(recStream);
     procNode = audioCtx.createScriptProcessor(4096, 1, 1);
-    muteNode = audioCtx.createGain(); muteNode.gain.value = 0; // engin endurhljómun
-    pcmChunks=[]; pcmLen=0;
+    // nær-þögn (ekki 0) svo iOS svelti ekki hljóðþráðinn og onaudioprocess haldi áfram
+    muteNode = audioCtx.createGain(); muteNode.gain.value = 0.0001;
+    pcmChunks=[]; pcmLen=0; procFired=false;
     procNode.onaudioprocess = (e)=>{
+      procFired=true;
       const ch = e.inputBuffer.getChannelData(0);
       pcmChunks.push(new Float32Array(ch));
       pcmLen += ch.length;
@@ -742,12 +757,21 @@ async function startRecording(){
     muteNode.connect(audioCtx.destination);
     recording=true; setRecUI(true);
     recStatus('<strong>Hlusta…</strong> ýttu aftur til að stöðva');
+    // varðhundur: berist ekkert hljóð á 1,5 sek -> Web Audio brást á þessu tæki, fall back
+    watchdog=setTimeout(()=>{
+      if(recording && !procFired){
+        recording=false; setRecUI(false); cleanupRec(); recInFlight=false;
+        recStatus('⚠️ Hljóðneminn skilaði engu hér. Ýttu á reitinn og notaðu 🎤 á lyklaborðinu.');
+        focusDictation();
+      }
+    }, 1500);
   }catch(err){
-    cleanupRec(); recStatus('Gat ekki ræst upptöku: '+(err.message||err));
+    cleanupRec(); recInFlight=false; recStatus('Gat ekki ræst upptöku: '+(err.message||err));
   }
 }
 
 function cleanupRec(){
+  if(watchdog){ clearTimeout(watchdog); watchdog=null; }
   try{ if(procNode){ procNode.disconnect(); procNode.onaudioprocess=null; } }catch(e){}
   try{ if(srcNode) srcNode.disconnect(); }catch(e){}
   try{ if(muteNode) muteNode.disconnect(); }catch(e){}
@@ -759,9 +783,10 @@ function cleanupRec(){
 function stopRecording(){
   if(!recording) return;
   recording=false; setRecUI(false);
+  if(watchdog){ clearTimeout(watchdog); watchdog=null; }
   const rate=recRate, chunks=pcmChunks, total=pcmLen;
   cleanupRec();
-  if(!total){ recStatus('Heyrði ekkert — reyndu aftur'); return; }
+  if(total < rate*0.3){ recStatus('Of stutt — talaðu aðeins lengur og reyndu aftur'); recInFlight=false; return; }
   const flat=flattenPCM(chunks,total);
   const down=downsample(flat, rate, 16000);
   const wav=encodeWAV(down, 16000);
@@ -794,17 +819,23 @@ function encodeWAV(samples, rate){
 }
 
 async function uploadAudio(blob){
-  if(!blob || !blob.size){ recStatus('Engin upptaka — reyndu aftur'); return; }
+  if(!blob || !blob.size){ recStatus('Engin upptaka — reyndu aftur'); recInFlight=false; return; }
+  if(blob.size > 4*1024*1024){ recStatus('Upptakan er of löng — reyndu styttra verkefni'); recInFlight=false; return; }
   recStatus('<strong>Vinn úr tali…</strong>');
+  const ctrl=new AbortController();
+  const to=setTimeout(()=>{ try{ctrl.abort();}catch(e){} }, 30000);
   try{
-    const res=await fetch('/api/transcribe',{method:'POST', headers:{'content-type':'audio/wav'}, body:blob});
+    const res=await fetch('/api/transcribe',{method:'POST', headers:{'content-type':'audio/wav'}, body:blob, signal:ctrl.signal});
     const data=await res.json().catch(()=>({}));
-    if(!res.ok) throw new Error(data.error || ('HTTP '+res.status));
+    if(!res.ok){ console.error('transcribe', res.status, data.error, blob.size+'b'); throw new Error(data.error || ('HTTP '+res.status)); }
     const text=(data.text||'').trim();
     if(text){ recStatus('Ýttu á <strong>🎤</strong> og talaðu'); handleText(text); }
-    else recStatus('Náði engu — talaðu aðeins lengur og reyndu aftur');
+    else { console.error('transcribe empty', blob.size+'b'); recStatus('Náði engu úr talinu — talaðu skýrt og reyndu aftur'); }
   }catch(err){
-    recStatus('⚠️ '+String(err.message||err));
+    if(err && err.name==='AbortError') recStatus('⚠️ Netið svaraði ekki í tíma — reyndu aftur');
+    else recStatus('⚠️ '+String(err.message||err));
+  }finally{
+    clearTimeout(to); recInFlight=false;
   }
 }
 
