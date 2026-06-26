@@ -474,26 +474,55 @@ function parseTaskInput(rawText, now){
    ============================================================ */
 const KEY='raddverkefni.v1';
 const LANGKEY='raddverkefni.lang';
-let tasks = load();
 let lang = localStorage.getItem(LANGKEY) || 'is';
 let pending = null; // verkefni í forskoðun
+let synced = false;      // true ef miðlæg geymsla (ský) er tengd
+let saveTimer = null;
 
-function load(){
+function sanitizeTask(t){
+  if(!t || typeof t!=='object') return null;
+  return {
+    id: t.id ? String(t.id) : 'id'+Math.random().toString(36).slice(2)+Date.now().toString(36),
+    title: typeof t.title==='string' ? t.title : '',
+    when: t.when ? String(t.when) : null,
+    hasTime: !!t.hasTime,
+    importance: (t.importance==='high'||t.importance==='low') ? t.importance : 'medium',
+    done: !!t.done
+  };
+}
+function loadLocal(){
   try{
     const data=JSON.parse(localStorage.getItem(KEY));
-    if(!Array.isArray(data)) return [];
-    // hreinsa/staðla hverja færslu svo skemmd gögn brjóti ekki appið
-    return data.filter(t=>t&&typeof t==='object').map(t=>({
-      id: t.id ? String(t.id) : 'id'+Math.random().toString(36).slice(2)+Date.now().toString(36),
-      title: typeof t.title==='string' ? t.title : '',
-      when: t.when ? String(t.when) : null,
-      hasTime: !!t.hasTime,
-      importance: (t.importance==='high'||t.importance==='low') ? t.importance : 'medium',
-      done: !!t.done
-    }));
+    return Array.isArray(data) ? data.map(sanitizeTask).filter(Boolean) : [];
   }catch(e){ return []; }
 }
-function save(){ localStorage.setItem(KEY, JSON.stringify(tasks)); }
+function saveLocal(){ try{ localStorage.setItem(KEY, JSON.stringify(tasks)); }catch(e){} }
+
+// save() = vista strax á tæki + senda í ský (ef tengt)
+function save(){ saveLocal(); if(synced){ clearTimeout(saveTimer); saveTimer=setTimeout(cloudSave, 500); } }
+
+async function cloudSave(){
+  if(!synced) return;
+  clearTimeout(saveTimer); saveTimer=null;
+  try{ await fetch('/api/tasks',{method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({tasks})}); }catch(e){}
+}
+async function cloudLoad(){
+  try{
+    const r=await fetch('/api/tasks',{cache:'no-store'});
+    const d=await r.json();
+    if(d && d.configured){
+      synced=true;
+      if(Array.isArray(d.tasks)){
+        tasks = d.tasks.map(sanitizeTask).filter(Boolean);
+        saveLocal(); render();
+      } else {
+        cloudSave(); // ský er tómt -> ýta staðbundnum gögnum upp í fyrsta sinn
+      }
+    }
+  }catch(e){ /* offline -> notum localStorage */ }
+}
+
+let tasks = loadLocal();
 
 const $=id=>document.getElementById(id);
 
@@ -990,6 +1019,14 @@ $('clearDone').onclick=()=>{ tasks=tasks.filter(t=>!t.done); save(); render(); t
 window.parseTaskInput=parseTaskInput;
 
 render();
+cloudLoad(); // sækja miðlæg gögn svo sama sjáist í síma og tölvu
+
+// samstilla þegar maður kemur aftur í gluggann (sækir nýjustu gögn frá öðru tæki)
+document.addEventListener('visibilitychange', ()=>{
+  if(document.hidden){ if(saveTimer) cloudSave(); } // flýta vistun áður en farið er
+  else { cloudLoad(); }
+});
+window.addEventListener('focus', ()=>{ if(synced) cloudLoad(); });
 </script>
 </body>
 </html>
