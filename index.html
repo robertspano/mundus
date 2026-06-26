@@ -248,6 +248,10 @@
 
 /* ---------- Íslensk orðasöfn fyrir textaskilning ---------- */
 const MONTHS = {janúar:0,'febrúar':1,mars:2,'apríl':3,'maí':4,'júní':5,'júlí':6,'ágúst':7,september:8,'október':9,'nóvember':10,desember:11};
+// styður líka styttingar/áherslulaust: "jún", "jun", "júlí", "ágú", "des" o.s.frv.
+const MONTH3 = {jan:0,feb:1,mar:2,apr:3,mai:4,jun:5,jul:6,agu:7,aug:7,sep:8,okt:9,oct:9,nov:10,des:11,dec:11};
+function foldIce(s){ return s.toLowerCase().replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ý/g,'y').replace(/ö/g,'o').replace(/æ/g,'ae').replace(/þ/g,'th').replace(/ð/g,'d'); }
+function monthIndex(tok){ const k=foldIce(tok).slice(0,3); return (k in MONTH3) ? MONTH3[k] : null; }
 const WEEKDAYS = { // getDay(): 0=sun .. 6=lau
   sunnudag:0, manudag:1, 'mánudag':1, thridjudag:2, 'þriðjudag':2,
   midvikudag:3, 'miðvikudag':3, fimmtudag:4, fostudag:5, 'föstudag':5, laugardag:6
@@ -359,23 +363,27 @@ function parseTaskInput(rawText, now){
   function setWhen(d){ when=d; }
   const today=atMidnight(now);
 
-  // tiltekin dagsetning: "3. júlí" / "þriðja júlí" / "3 júlí"
-  const monthNames=Object.keys(MONTHS).join('|');
-  let dm;
-  if((dm=lower.match(new RegExp('(\\d{1,2})\\.?\\s+('+monthNames+')')))){
-    const day=parseInt(dm[1],10), mon=MONTHS[dm[2]];
-    if(day>=1 && day<=31){
-      let y=now.getFullYear(); let cand=new Date(y,mon,day);
-      if(atMidnight(cand)<today) cand=new Date(y+1,mon,day);
-      setWhen(atMidnight(cand)); cutMatch(dm);
-    }
-  } else if((dm=lower.match(new RegExp('([a-záéíóúýþæöð]+)\\s+('+monthNames+')')))){
-    if(ORDINAL[dm[1]]!=null){
-      const day=ORDINAL[dm[1]], mon=MONTHS[dm[2]];
-      if(day>=1 && day<=31){
+  // tiltekin dagsetning: "3. júlí" / "30 jún" / "30 jun" / "þriðja júlí"
+  // tölu + mánuður (finnum fyrsta gilda mánaðar-par, sleppum t.d. "3 daga")
+  if(!when){
+    for(const dm of lower.matchAll(/(\d{1,2})\.?\s+([a-záéíóúýþæöð]{3,})/g)){
+      const mon=monthIndex(dm[2]), day=parseInt(dm[1],10);
+      if(mon!=null && day>=1 && day<=31){
         let y=now.getFullYear(); let cand=new Date(y,mon,day);
         if(atMidnight(cand)<today) cand=new Date(y+1,mon,day);
-        setWhen(atMidnight(cand)); cutMatch(dm);
+        setWhen(atMidnight(cand)); cutMatch(dm); break;
+      }
+    }
+  }
+  // raðtala + mánuður: "þriðja júlí" / "fyrsta ágúst"
+  if(!when){
+    for(const dm of lower.matchAll(/([a-záéíóúýþæöð]+)\s+([a-záéíóúýþæöð]{3,})/g)){
+      if(ORDINAL[dm[1]]==null) continue;
+      const mon=monthIndex(dm[2]), day=ORDINAL[dm[1]];
+      if(mon!=null && day>=1 && day<=31){
+        let y=now.getFullYear(); let cand=new Date(y,mon,day);
+        if(atMidnight(cand)<today) cand=new Date(y+1,mon,day);
+        setWhen(atMidnight(cand)); cutMatch(dm); break;
       }
     }
   }
@@ -539,7 +547,6 @@ function fmtDateCell(t){
 }
 
 function render(){
-  renderPreview();
   const list=$('list'); list.innerHTML='';
   const inbox=$('inboxList'); inbox.innerHTML='';
 
@@ -727,11 +734,22 @@ function commitPending(){
   save(); render(); toast('Vistað ✓');
 }
 
-/* ---------- inntak: tal & texti ---------- */
+/* ---------- inntak: tal & texti -> vistast STRAX (engin staðfesting) ---------- */
 function handleText(text){
   if(!text || !text.trim()) return;
   const parsed=parseTaskInput(text, new Date());
-  showPreview(parsed);
+  const title=(parsed.title && parsed.title.trim()) || text.trim();
+  const task={
+    id:'id'+Math.random().toString(36).slice(2)+Date.now().toString(36),
+    title: title,
+    when: parsed.when ? new Date(parsed.when).toISOString() : null,
+    hasTime: parsed.hasTime,
+    importance: parsed.importance,
+    done:false
+  };
+  tasks.push(task);
+  save(); render();
+  toast(task.when ? 'Vistað ✓' : 'Sett í Óskráð');
 }
 
 $('manualBtn').onclick=()=>{ const i=$('manualInput'); handleText(i.value); i.value=''; };
