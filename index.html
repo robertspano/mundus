@@ -64,9 +64,10 @@
   .transcript .interim{color:var(--faint)}
 
   .unsupported{
-    background:#2a1c2c; border:1px solid #5a2b40; color:#ffc2cf; border-radius:14px;
-    padding:12px 14px; font-size:13.5px; margin:12px 2px 0; line-height:1.5; text-align:left; display:none;
+    background:#15203f; border:1px solid #2a3a66; color:#bcd0ff; border-radius:14px;
+    padding:13px 15px; font-size:13.5px; margin:14px 2px 0; line-height:1.6; text-align:left; display:none;
   }
+  .unsupported b{color:#fff}
 
   /* manual entry */
   .manual{display:flex; gap:8px; margin-top:14px}
@@ -688,9 +689,12 @@ $('micBtn').onclick=()=>{
 };
 
 if(!useWebSpeech){
-  // engin stór talgreining hér — gerum lyklaborðs-leiðina ljósa
-  $('hint').innerHTML='Ýttu hér og talaðu með <strong>🎤</strong> á lyklaborðinu';
-  if(!SR) $('micBtn').setAttribute('aria-label','Opna lyklaborð til að tala');
+  // engin stór talgreining hér — gerum lyklaborðs-leiðina ljósa og sýnilega
+  $('hint').innerHTML='Ýttu á reitinn og talaðu með <strong>🎤</strong> á lyklaborðinu';
+  const help=$('unsupported');
+  help.innerHTML='📱 <b>Til að tala:</b> ýttu á reitinn hér fyrir ofan → ýttu svo á <b>🎤</b> á lyklaborðinu (við hliðina á bilstöng) og talaðu.<br><br>Ekkert <b>🎤</b> á lyklaborðinu? Kveiktu á því: <b>Stillingar ▸ Almennt ▸ Lyklaborð ▸ Virkja upptöku (Enable Dictation)</b>.';
+  help.style.display='block';
+  $('micBtn').setAttribute('aria-label','Opna lyklaborð til að tala');
 }
 
 function startListening(){
