@@ -3,21 +3,22 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<meta name="theme-color" content="#0b1020" />
+<meta name="theme-color" content="#f5f7fb" />
 <title>Raddverkefni</title>
 <style>
   :root{
-    --bg:#0b1020; --bg2:#121a30; --card:#161f3a; --card2:#1c2747;
-    --line:#26314f; --text:#eef2ff; --muted:#93a0c4; --faint:#5a678c;
-    --accent:#6d8bff; --accent2:#8a6dff;
-    --high:#ff5d73; --med:#ffb454; --low:#42c9a0;
-    --shadow:0 10px 30px rgba(0,0,0,.35);
+    --bg:#f5f7fb; --bg2:#eef1f7; --card:#ffffff; --card2:#ffffff;
+    --line:#e7e9f1; --text:#14161d; --muted:#6b7280; --faint:#a6abb8;
+    --accent:#4f6bff; --accent2:#7a66ff;
+    --high:#ff5168; --med:#f5a524; --low:#16a34a;
+    --shadow:0 6px 22px rgba(30,42,80,.07);
+    --shadow-lg:0 12px 34px rgba(30,42,80,.13);
     --r:18px;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
   html,body{margin:0; height:100%}
   body{
-    background:radial-gradient(120% 80% at 50% -10%, #1a2647 0%, var(--bg) 55%) fixed;
+    background:var(--bg);
     color:var(--text);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     -webkit-font-smoothing:antialiased;
@@ -64,10 +65,10 @@
   .transcript .interim{color:var(--faint)}
 
   .unsupported{
-    background:#15203f; border:1px solid #2a3a66; color:#bcd0ff; border-radius:14px;
+    background:#eef2ff; border:1px solid #d7e0ff; color:#3a4690; border-radius:14px;
     padding:13px 15px; font-size:13.5px; margin:14px 2px 0; line-height:1.6; text-align:left; display:none;
   }
-  .unsupported b{color:#fff}
+  .unsupported b{color:#1d2c66}
 
   /* manual entry */
   .manual{display:flex; gap:8px; margin-top:14px}
@@ -123,36 +124,32 @@
   .btn:active{transform:scale(.97)}
 
   /* ---- list ---- */
-  .section{margin:18px 2px 8px; display:flex; align-items:center; gap:10px}
-  .section h2{font-size:13px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin:0; font-weight:700}
-  .section .count{color:var(--faint); font-size:12px}
-  .section .line{flex:1; height:1px; background:var(--line)}
+  .uptitle{font-size:12px; text-transform:uppercase; letter-spacing:.09em; color:var(--faint); font-weight:800; margin:18px 4px 10px}
+  .uptitle:first-child{margin-top:4px}
 
   .task{
-    display:flex; align-items:flex-start; gap:12px; background:var(--card);
-    border:1px solid var(--line); border-radius:16px; padding:14px; margin-bottom:10px;
-    position:relative; overflow:hidden; animation:rise .2s ease;
+    display:flex; align-items:center; gap:13px; background:var(--card);
+    border:1px solid var(--line); border-radius:16px; padding:15px 16px; margin-bottom:10px;
+    box-shadow:var(--shadow); animation:rise .2s ease;
   }
-  .task .stripe{position:absolute; left:0; top:0; bottom:0; width:4px}
-  .task.high .stripe{background:var(--high)} .task.med .stripe{background:var(--med)} .task.low .stripe{background:var(--low)}
+  .task.hero{ border:1.5px solid var(--accent); box-shadow:var(--shadow-lg); padding:18px; }
+  .task.hero .ttitle{ font-size:18px; font-weight:750; }
   .check{
-    flex:0 0 auto; width:24px; height:24px; border-radius:50%; border:2px solid var(--faint);
-    background:transparent; cursor:pointer; margin-top:1px; display:flex; align-items:center; justify-content:center;
-    color:#fff; font-size:14px; transition:.15s;
+    flex:0 0 auto; width:26px; height:26px; border-radius:50%; border:2px solid #d4d8e2;
+    background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:15px; transition:.15s;
   }
   .task.done .check{background:var(--low); border-color:var(--low)}
   .tmain{flex:1; min-width:0}
-  .ttitle{font-size:16px; font-weight:600; line-height:1.35; word-wrap:break-word}
-  .task.done .ttitle{color:var(--muted); text-decoration:line-through}
-  .tmeta{display:flex; flex-wrap:wrap; gap:6px 10px; margin-top:6px; font-size:12.5px; color:var(--muted)}
-  .tmeta .imp{font-weight:700}
-  .tmeta .imp.high{color:var(--high)} .tmeta .imp.med{color:var(--med)} .tmeta .imp.low{color:var(--low)}
-  .tmeta .overdue{color:var(--high); font-weight:700}
-  .del{flex:0 0 auto; background:transparent; border:none; color:var(--faint); font-size:20px; cursor:pointer; padding:2px 4px; line-height:1}
-  .del:active{color:var(--high)}
+  .ttitle{font-size:16px; font-weight:600; line-height:1.35; word-wrap:break-word; color:var(--text)}
+  .task.done .ttitle{color:var(--faint); text-decoration:line-through}
+  .tmeta{margin-top:5px; font-size:13px; color:var(--muted); font-weight:600}
+  .tmeta .overdue{color:#e0445c; font-weight:700}
+  .del{flex:0 0 auto; background:transparent; border:none; color:#c7ccd6; font-size:22px; cursor:pointer; padding:2px 4px; line-height:1}
+  .del:active{color:#e0445c}
 
-  .empty{text-align:center; color:var(--faint); padding:34px 16px; font-size:14.5px; line-height:1.6}
-  .empty .big{font-size:34px; display:block; margin-bottom:8px}
+  .empty{text-align:center; color:var(--faint); padding:40px 16px; font-size:14.5px; line-height:1.7}
+  .empty .big{font-size:38px; display:block; margin-bottom:10px}
 
   .footer{position:fixed; bottom:0; left:0; right:0; display:flex; justify-content:center; pointer-events:none}
   .footbar{
@@ -165,9 +162,9 @@
 
   .toast{
     position:fixed; left:50%; bottom:84px; transform:translateX(-50%) translateY(20px);
-    background:var(--card2); border:1px solid var(--line); color:var(--text);
-    padding:11px 16px; border-radius:999px; font-size:14px; font-weight:600;
-    box-shadow:var(--shadow); opacity:0; pointer-events:none; transition:.25s; z-index:50;
+    background:#14161d; border:1px solid #14161d; color:#fff;
+    padding:11px 18px; border-radius:999px; font-size:14px; font-weight:600;
+    box-shadow:var(--shadow-lg); opacity:0; pointer-events:none; transition:.25s; z-index:50;
   }
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
 </style>
@@ -501,27 +498,25 @@ function render(){
   const done=tasks.filter(t=>t.done);
 
   if(tasks.length===0){
-    list.innerHTML='<div class="empty"><span class="big">🎙️</span>Engin verkefni ennþá.<br>ýttu á hnappinn og segðu t.d.<br><em>„Hringja í mömmu á morgun, mjög mikilvægt“</em></div>';
+    list.innerHTML='<div class="empty"><span class="big">🎙️</span>Engin verkefni ennþá.<br>Ýttu á 🎤 og segðu t.d.<br><em>„Kaupa mjólk á morgun"</em></div>';
   } else {
-    // hópa virk eftir dagsetningu
-    const groups={};
-    for(const t of active){
-      const s=sectionLabel(t);
-      (groups[s.key]=groups[s.key]||{label:s.label,items:[]}).items.push(t);
-    }
-    Object.keys(groups).sort().forEach(k=>{
-      const g=groups[k];
-      g.items.sort((a,b)=>{
-        const aw=a.when?new Date(a.when).getTime():Infinity, bw=b.when?new Date(b.when).getTime():Infinity;
-        if(aw!==bw) return aw-bw;
-        return IMP_ORDER[a.importance]-IMP_ORDER[b.importance];
-      });
-      list.appendChild(sectionEl(g.label, g.items.length));
-      g.items.forEach(t=>list.appendChild(taskEl(t)));
+    // raða eftir tíma: það sem er fyrst/næst efst, fjarlægari dagar neðar, án dagsetningar neðst
+    active.sort((a,b)=>{
+      const aw=a.when?new Date(a.when).getTime():Infinity;
+      const bw=b.when?new Date(b.when).getTime():Infinity;
+      return aw-bw;
     });
+    if(active.length){
+      list.appendChild(labelEl('Næst'));
+      list.appendChild(taskEl(active[0], true));
+      if(active.length>1){
+        list.appendChild(labelEl('Seinna'));
+        for(let i=1;i<active.length;i++) list.appendChild(taskEl(active[i], false));
+      }
+    }
     if(done.length){
-      list.appendChild(sectionEl('Klárað', done.length));
-      done.forEach(t=>list.appendChild(taskEl(t)));
+      list.appendChild(labelEl('Klárað'));
+      done.forEach(t=>list.appendChild(taskEl(t,false)));
     }
   }
 
@@ -530,35 +525,25 @@ function render(){
   $('clearDone').style.visibility = done.length? 'visible':'hidden';
 }
 
-function sectionEl(label, count){
-  const el=document.createElement('div'); el.className='section';
-  el.innerHTML='<h2></h2><span class="count"></span><span class="line"></span>';
-  el.querySelector('h2').textContent=label;
-  el.querySelector('.count').textContent=count;
-  return el;
-}
+function labelEl(txt){ const el=document.createElement('div'); el.className='uptitle'; el.textContent=txt; return el; }
 
-function taskEl(t){
+function taskEl(t, hero){
   const el=document.createElement('div');
-  el.className='task '+(t.importance==='high'?'high':t.importance==='low'?'low':'med')+(t.done?' done':'');
+  el.className='task'+(hero?' hero':'')+(t.done?' done':'');
   // dagsverkefni (án tíma) verða "útrunnin" fyrst þegar dagurinn er liðinn, ekki kl. 09 á deginum
   const overdue = t.when && !t.done && (t.hasTime
     ? new Date(t.when) < new Date()
     : atMidnight(new Date(t.when)) < atMidnight(new Date()));
   el.innerHTML =
-    '<div class="stripe"></div>'+
     '<button class="check" aria-label="'+(t.done?'Afmerkja sem klárað':'Merkja sem klárað')+'">'+(t.done?'✓':'')+'</button>'+
     '<div class="tmain">'+
       '<div class="ttitle"></div>'+
-      '<div class="tmeta">'+
-        '<span class="imp '+(t.importance==='high'?'high':t.importance==='low'?'low':'med')+'">'+IMP_LABEL[t.importance]+'</span>'+
-        '<span class="'+(overdue?'overdue':'')+'">'+esc(fmtWhen(t))+'</span>'+
-      '</div>'+
+      '<div class="tmeta"><span class="'+(overdue?'overdue':'')+'">'+esc(fmtWhen(t))+'</span></div>'+
     '</div>'+
     '<button class="del" aria-label="Eyða">×</button>';
   el.querySelector('.ttitle').textContent=t.title;
   el.querySelector('.check').onclick=()=>{ t.done=!t.done; save(); render(); };
-  el.querySelector('.del').onclick=()=>{ tasks=tasks.filter(x=>x.id!==t.id); save(); render(); toast('Eyðt'); };
+  el.querySelector('.del').onclick=()=>{ tasks=tasks.filter(x=>x.id!==t.id); save(); render(); toast('Eytt'); };
   return el;
 }
 function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
@@ -585,13 +570,6 @@ function renderPreview(){
     '<div class="pvlabel">Nýtt verkefni</div>'+
     '<input class="titlefield" placeholder="Hvað á að gera?" />'+
     '<div class="pvrow">'+
-      '<div class="seg imp">'+
-        '<button data-imp="high" class="high">Hátt</button>'+
-        '<button data-imp="medium" class="med">Miðlungs</button>'+
-        '<button data-imp="low" class="low">Lágt</button>'+
-      '</div>'+
-    '</div>'+
-    '<div class="pvrow">'+
       '<label class="datepill">📅 <span class="dlabel"></span>'+
         '<input type="datetime-local" class="dtin" />'+
       '</label>'+
@@ -613,11 +591,6 @@ function renderPreview(){
     if(e.key==='Enter'){ e.preventDefault(); commitPending(); }
     else if(e.key==='Escape'){ e.preventDefault(); pending=null; render(); const mb=$('micBtn'); if(mb) mb.focus(); }
   };
-
-  el.querySelectorAll('.seg.imp button').forEach(b=>{
-    b.classList.toggle('on', b.dataset.imp===p.importance);
-    b.onclick=()=>{ p.importance=b.dataset.imp; renderPreview(); };
-  });
 
   const dlabel=el.querySelector('.dlabel');
   dlabel.textContent = p.when? fmtWhen({when:new Date(p.when),hasTime:p.hasTime}) : 'Engin dagsetning';
