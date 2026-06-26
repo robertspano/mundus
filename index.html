@@ -24,7 +24,8 @@
     -webkit-font-smoothing:antialiased;
     display:flex; justify-content:center;
   }
-  .app{width:100%; max-width:520px; min-height:100dvh; padding:18px 16px 140px; position:relative}
+  .shell{display:flex; gap:22px; justify-content:center; align-items:flex-start; min-height:100dvh}
+  .app{width:100%; max-width:520px; padding:20px 16px 120px; position:relative}
 
   header{display:flex; align-items:center; justify-content:space-between; gap:10px; margin:6px 2px 18px}
   header h1{font-size:21px; margin:0; letter-spacing:-.02em; font-weight:700}
@@ -123,33 +124,58 @@
   .btn.cancel{background:var(--bg2); color:var(--muted); border:1px solid var(--line); flex:0 0 auto; padding:14px 18px}
   .btn:active{transform:scale(.97)}
 
-  /* ---- list ---- */
-  .uptitle{font-size:12px; text-transform:uppercase; letter-spacing:.09em; color:var(--faint); font-weight:800; margin:18px 4px 10px}
-  .uptitle:first-child{margin-top:4px}
-
-  .task{
-    display:flex; align-items:center; gap:13px; background:var(--card);
-    border:1px solid var(--line); border-radius:16px; padding:15px 16px; margin-bottom:10px;
-    box-shadow:var(--shadow); animation:rise .2s ease;
-  }
-  .task.hero{ border:1.5px solid var(--accent); box-shadow:var(--shadow-lg); padding:18px; }
-  .task.hero .ttitle{ font-size:18px; font-weight:750; }
+  /* ---- sheet (dagsetning | verkefni, eins og Google Sheets) ---- */
+  .sheet{background:var(--card); border:1px solid var(--line); border-radius:18px; overflow:hidden; box-shadow:var(--shadow)}
+  .sheet.dragover{outline:2px dashed var(--accent); outline-offset:-2px}
+  .row{display:grid; grid-template-columns:96px 1fr; align-items:stretch; border-top:1px solid var(--line); background:var(--card); animation:rise .18s ease}
+  .row:first-child{border-top:none}
+  .row.next .rdate{color:var(--accent)}
+  .row.dragging{opacity:.4}
+  .row.dropbefore{box-shadow:inset 0 3px 0 -1px var(--accent)}
+  .rdate{padding:13px 12px; font-size:12.5px; font-weight:700; color:var(--muted); border-right:1px solid var(--line); display:flex; flex-direction:column; justify-content:center; gap:2px; cursor:pointer}
+  .rdate small{font-weight:600; color:var(--faint); font-size:11px}
+  .rdate.overdue{color:#e0445c}
+  .rtask{display:flex; align-items:center; gap:12px; padding:12px 14px; min-width:0}
   .check{
-    flex:0 0 auto; width:26px; height:26px; border-radius:50%; border:2px solid #d4d8e2;
+    flex:0 0 auto; width:24px; height:24px; border-radius:50%; border:2px solid #d4d8e2;
     background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;
-    color:#fff; font-size:15px; transition:.15s;
+    color:#fff; font-size:14px; transition:.15s;
   }
-  .task.done .check{background:var(--low); border-color:var(--low)}
-  .tmain{flex:1; min-width:0}
-  .ttitle{font-size:16px; font-weight:600; line-height:1.35; word-wrap:break-word; color:var(--text)}
-  .task.done .ttitle{color:var(--faint); text-decoration:line-through}
-  .tmeta{margin-top:5px; font-size:13px; color:var(--muted); font-weight:600}
-  .tmeta .overdue{color:#e0445c; font-weight:700}
-  .del{flex:0 0 auto; background:transparent; border:none; color:#c7ccd6; font-size:22px; cursor:pointer; padding:2px 4px; line-height:1}
+  .row.done .check{background:var(--low); border-color:var(--low)}
+  .ttitle{flex:1; min-width:0; font-size:15.5px; font-weight:600; line-height:1.35; word-wrap:break-word; color:var(--text); cursor:grab}
+  .row.done .ttitle{color:var(--faint); text-decoration:line-through}
+  .del{flex:0 0 auto; background:transparent; border:none; color:#c7ccd6; font-size:21px; cursor:pointer; padding:2px 4px; line-height:1}
   .del:active{color:#e0445c}
+  .sheetlabel{padding:9px 14px; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--faint); font-weight:800; background:var(--bg2); border-top:1px solid var(--line)}
+  .emptysheet{padding:30px 18px; text-align:center; color:var(--faint); font-size:14px; line-height:1.7}
+  .emptysheet .big{font-size:34px; display:block; margin-bottom:8px}
 
-  .empty{text-align:center; color:var(--faint); padding:40px 16px; font-size:14.5px; line-height:1.7}
-  .empty .big{font-size:38px; display:block; margin-bottom:10px}
+  /* ---- inbox (fljótandi hægra megin: óskráð verkefni) ---- */
+  .inbox{
+    flex:0 0 250px; width:250px; position:sticky; top:20px; margin-top:78px;
+    background:var(--card); border:1px solid var(--line); border-radius:18px;
+    box-shadow:var(--shadow); padding:16px 15px;
+  }
+  .inboxhead{font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--faint); font-weight:800; margin-bottom:12px; display:flex; align-items:center; gap:8px}
+  .inboxhead .cnt{background:var(--accent); color:#fff; border-radius:999px; min-width:18px; height:18px; padding:0 5px; font-size:11px; display:inline-flex; align-items:center; justify-content:center; letter-spacing:0}
+  .inboxhead .cnt:empty{display:none}
+  .inbox.dragover{outline:2px dashed var(--accent); outline-offset:3px; background:#f2f4ff}
+  .ibitem{
+    display:flex; align-items:center; gap:9px; background:var(--bg2); border:1px solid var(--line);
+    border-radius:12px; padding:11px 12px; margin-bottom:8px; cursor:grab; font-size:14px;
+    font-weight:600; color:var(--text); line-height:1.3;
+  }
+  .ibitem:active{cursor:grabbing}
+  .ibitem.dragging{opacity:.4}
+  .ibitem .ibtitle{flex:1; min-width:0; word-wrap:break-word; cursor:grab}
+  .ibitem .ibdel{background:transparent; border:none; color:#c7ccd6; font-size:18px; cursor:pointer; line-height:1; padding:0 2px}
+  .inboxhint{font-size:12px; color:var(--faint); line-height:1.55; margin-top:4px}
+
+  @media (max-width:840px){
+    .shell{flex-direction:column; align-items:center; gap:0}
+    .app{padding-bottom:18px}
+    .inbox{position:static; flex:none; width:100%; max-width:520px; margin:0 16px 120px; top:auto}
+  }
 
   .footer{position:fixed; bottom:0; left:0; right:0; display:flex; justify-content:center; pointer-events:none}
   .footbar{
@@ -170,6 +196,7 @@
 </style>
 </head>
 <body>
+<div class="shell">
 <div class="app">
   <header>
     <h1>Raddverkefni<span class="dot">.</span></h1>
@@ -195,7 +222,14 @@
   </section>
 
   <div id="previewSlot"></div>
-  <div id="list"></div>
+  <div class="sheet" id="list"></div>
+</div>
+
+<aside class="inbox" id="inbox">
+  <div class="inboxhead">Óskráð <span class="cnt" id="inboxCnt"></span></div>
+  <div id="inboxList"></div>
+  <div class="inboxhint" id="inboxHint">Verkefni án dagsetningar lenda hér. Dragðu þau yfir í listann — eða smelltu til að velja dag.</div>
+</aside>
 </div>
 
 <div class="footer"><div class="footbar">
@@ -488,63 +522,132 @@ function sectionLabel(t){
 const IMP_LABEL={high:'Hátt',medium:'Miðlungs',low:'Lágt'};
 const IMP_ORDER={high:0,medium:1,low:2};
 
-/* ---------- render ---------- */
+/* ---------- render: sheet (dagsetning | verkefni) + inbox (óskráð) ---------- */
+let dragId=null;
+
+function fmtDateCell(t){
+  const d=new Date(t.when), today=atMidnight(new Date());
+  const diff=Math.round((atMidnight(d)-today)/86400000);
+  let day;
+  if(diff===0) day='Í dag';
+  else if(diff===1) day='Á morgun';
+  else if(diff===-1) day='Í gær';
+  else if(diff>1 && diff<7) day=IS_DAYS[d.getDay()].slice(0,3)+'.';
+  else day=d.getDate()+'. '+IS_MONTHS[d.getMonth()];
+  const time = t.hasTime ? String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0') : '';
+  return {day, time};
+}
+
 function render(){
   renderPreview();
-  const list=$('list');
-  list.innerHTML='';
+  const list=$('list'); list.innerHTML='';
+  const inbox=$('inboxList'); inbox.innerHTML='';
 
-  const active=tasks.filter(t=>!t.done);
-  const done=tasks.filter(t=>t.done);
+  const scheduled=tasks.filter(t=>!t.done && t.when).sort((a,b)=> new Date(a.when)-new Date(b.when));
+  const undated=tasks.filter(t=>!t.done && !t.when);
+  const done=tasks.filter(t=>t.done).sort((a,b)=> (new Date(b.when||0))-(new Date(a.when||0)));
 
-  if(tasks.length===0){
-    list.innerHTML='<div class="empty"><span class="big">🎙️</span>Engin verkefni ennþá.<br>Ýttu á 🎤 og segðu t.d.<br><em>„Kaupa mjólk á morgun"</em></div>';
+  // --- sheet (tímasett, raðað eftir degi: í dag efst, fjarlægast neðst) ---
+  if(!scheduled.length && !done.length){
+    list.innerHTML='<div class="emptysheet"><span class="big">🗓️</span>Engin tímasett verkefni.<br>Talaðu með dagsetningu — eða dragðu úr „Óskráð".</div>';
   } else {
-    // raða eftir tíma: það sem er fyrst/næst efst, fjarlægari dagar neðar, án dagsetningar neðst
-    active.sort((a,b)=>{
-      const aw=a.when?new Date(a.when).getTime():Infinity;
-      const bw=b.when?new Date(b.when).getTime():Infinity;
-      return aw-bw;
-    });
-    if(active.length){
-      list.appendChild(labelEl('Næst'));
-      list.appendChild(taskEl(active[0], true));
-      if(active.length>1){
-        list.appendChild(labelEl('Seinna'));
-        for(let i=1;i<active.length;i++) list.appendChild(taskEl(active[i], false));
-      }
-    }
+    scheduled.forEach((t,i)=> list.appendChild(rowEl(t, i===0)));
     if(done.length){
-      list.appendChild(labelEl('Klárað'));
-      done.forEach(t=>list.appendChild(taskEl(t,false)));
+      const lbl=document.createElement('div'); lbl.className='sheetlabel'; lbl.textContent='Klárað'; list.appendChild(lbl);
+      done.forEach(t=> list.appendChild(rowEl(t,false)));
     }
   }
+  list.ondragover=e=>{ e.preventDefault(); };
+  list.ondrop=e=>{
+    e.preventDefault();
+    if(e.target.closest('.row')) return; // raðir sjá um sig sjálfar
+    const id=e.dataTransfer.getData('text/plain')||dragId;
+    const t=tasks.find(x=>x.id===id);
+    if(t) scheduleOn(t, new Date()); // sleppt á tóma svæðið -> í dag
+  };
 
-  const left=active.length;
-  $('stat').textContent = tasks.length? (left+' eftir · '+done.length+' klárað') : '';
+  // --- inbox (óskráð: engin dagsetning) ---
+  undated.forEach(t=> inbox.appendChild(inboxItemEl(t)));
+  $('inboxCnt').textContent = undated.length || '';
+  $('inboxHint').style.display = undated.length? 'none':'block';
+  const ibx=$('inbox');
+  ibx.ondragover=e=>{ e.preventDefault(); ibx.classList.add('dragover'); };
+  ibx.ondragleave=()=> ibx.classList.remove('dragover');
+  ibx.ondrop=e=>{
+    e.preventDefault(); ibx.classList.remove('dragover');
+    const id=e.dataTransfer.getData('text/plain')||dragId;
+    const t=tasks.find(x=>x.id===id);
+    if(t && t.when){ t.when=null; t.hasTime=false; save(); render(); toast('Sett í Óskráð'); }
+  };
+
+  $('stat').textContent = tasks.length? ((scheduled.length+undated.length)+' eftir · '+done.length+' klárað') : '';
   $('clearDone').style.visibility = done.length? 'visible':'hidden';
 }
 
-function labelEl(txt){ const el=document.createElement('div'); el.className='uptitle'; el.textContent=txt; return el; }
-
-function taskEl(t, hero){
+function rowEl(t, isNext){
   const el=document.createElement('div');
-  el.className='task'+(hero?' hero':'')+(t.done?' done':'');
-  // dagsverkefni (án tíma) verða "útrunnin" fyrst þegar dagurinn er liðinn, ekki kl. 09 á deginum
-  const overdue = t.when && !t.done && (t.hasTime
-    ? new Date(t.when) < new Date()
-    : atMidnight(new Date(t.when)) < atMidnight(new Date()));
+  el.className='row'+(t.done?' done':'')+(isNext&&!t.done?' next':'');
+  el.draggable=true; el.dataset.id=t.id;
+  const overdue = t.when && !t.done && (t.hasTime ? new Date(t.when)<new Date() : atMidnight(new Date(t.when))<atMidnight(new Date()));
+  const dc=fmtDateCell(t);
   el.innerHTML =
-    '<button class="check" aria-label="'+(t.done?'Afmerkja sem klárað':'Merkja sem klárað')+'">'+(t.done?'✓':'')+'</button>'+
-    '<div class="tmain">'+
-      '<div class="ttitle"></div>'+
-      '<div class="tmeta"><span class="'+(overdue?'overdue':'')+'">'+esc(fmtWhen(t))+'</span></div>'+
-    '</div>'+
-    '<button class="del" aria-label="Eyða">×</button>';
+    '<div class="rdate'+(overdue?' overdue':'')+'"><span></span>'+(dc.time?'<small></small>':'')+'</div>'+
+    '<div class="rtask">'+
+      '<button class="check" aria-label="'+(t.done?'Afmerkja':'Merkja sem klárað')+'">'+(t.done?'✓':'')+'</button>'+
+      '<span class="ttitle"></span>'+
+      '<button class="del" aria-label="Eyða">×</button>'+
+    '</div>';
+  el.querySelector('.rdate span').textContent=dc.day;
+  if(dc.time) el.querySelector('.rdate small').textContent=dc.time;
   el.querySelector('.ttitle').textContent=t.title;
   el.querySelector('.check').onclick=()=>{ t.done=!t.done; save(); render(); };
   el.querySelector('.del').onclick=()=>{ tasks=tasks.filter(x=>x.id!==t.id); save(); render(); toast('Eytt'); };
+  el.querySelector('.rdate').onclick=()=> openDatePicker(t);
+  wireDrag(el, t);
+  el.ondragover=e=>{ e.preventDefault(); e.stopPropagation(); el.classList.add('dropbefore'); };
+  el.ondragleave=()=> el.classList.remove('dropbefore');
+  el.ondrop=e=>{
+    e.preventDefault(); e.stopPropagation(); el.classList.remove('dropbefore');
+    const id=e.dataTransfer.getData('text/plain')||dragId;
+    if(id===t.id) return;
+    const src=tasks.find(x=>x.id===id);
+    if(src && t.when) scheduleOn(src, new Date(t.when)); // fær sama dag og röðin sem sleppt er á
+  };
   return el;
+}
+
+function inboxItemEl(t){
+  const el=document.createElement('div');
+  el.className='ibitem'; el.draggable=true; el.dataset.id=t.id;
+  el.innerHTML='<span class="ibtitle"></span><button class="ibdel" aria-label="Eyða">×</button>';
+  el.querySelector('.ibtitle').textContent=t.title;
+  el.querySelector('.ibtitle').onclick=()=> openDatePicker(t);
+  el.querySelector('.ibdel').onclick=()=>{ tasks=tasks.filter(x=>x.id!==t.id); save(); render(); toast('Eytt'); };
+  wireDrag(el, t);
+  return el;
+}
+
+function wireDrag(el, t){
+  el.ondragstart=e=>{ dragId=t.id; try{ e.dataTransfer.setData('text/plain', t.id); e.dataTransfer.effectAllowed='move'; }catch(_){} el.classList.add('dragging'); };
+  el.ondragend=()=>{ dragId=null; el.classList.remove('dragging'); document.querySelectorAll('.dropbefore,.dragover').forEach(x=>x.classList.remove('dropbefore','dragover')); };
+}
+
+function scheduleOn(t, dateObj){
+  const d=atMidnight(dateObj); d.setHours(9,0,0,0);
+  t.when=d.toISOString(); t.hasTime=false;
+  save(); render(); toast('Tímasett ✓');
+}
+
+function openDatePicker(t){
+  const inp=document.createElement('input');
+  inp.type='datetime-local';
+  inp.style.cssText='position:fixed; left:-9999px; opacity:0;';
+  if(t.when) inp.value=toLocalInput(new Date(t.when));
+  document.body.appendChild(inp);
+  let used=false;
+  inp.onchange=()=>{ used=true; if(inp.value){ t.when=new Date(inp.value).toISOString(); t.hasTime=true; save(); render(); } inp.remove(); };
+  inp.onblur=()=> setTimeout(()=>{ if(!used && inp.parentNode) inp.remove(); }, 200);
+  inp.focus(); if(inp.showPicker){ try{ inp.showPicker(); }catch(e){} }
 }
 function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 
