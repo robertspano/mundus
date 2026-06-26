@@ -685,16 +685,68 @@ function focusDictation(){
 
 $('micBtn').onclick=()=>{
   if(useWebSpeech){ listening? stopListening() : startListening(); }
-  else { focusDictation(); }
+  else { recording? stopRecording() : startRecording(); }
 };
 
 if(!useWebSpeech){
-  // engin stór talgreining hér — gerum lyklaborðs-leiðina ljósa og sýnilega
-  $('hint').innerHTML='Ýttu á reitinn og talaðu með <strong>🎤</strong> á lyklaborðinu';
+  // iOS/vafri án Web Speech: takkinn tekur upp hljóð og umritar gegnum /api/transcribe.
+  $('hint').innerHTML='Ýttu á <strong>🎤</strong> og talaðu';
   const help=$('unsupported');
-  help.innerHTML='📱 <b>Til að tala:</b> ýttu á reitinn hér fyrir ofan → ýttu svo á <b>🎤</b> á lyklaborðinu (við hliðina á bilstöng) og talaðu.<br><br>Ekkert <b>🎤</b> á lyklaborðinu? Kveiktu á því: <b>Stillingar ▸ Almennt ▸ Lyklaborð ▸ Virkja upptöku (Enable Dictation)</b>.';
+  help.innerHTML='🎤 <b>Ýttu á hnappinn og talaðu</b> — ýttu aftur til að stöðva, þá skráist verkefnið.<br><br>Vill ekki? Þú getur líka ýtt á reitinn og notað <b>🎤</b> á lyklaborðinu.';
   help.style.display='block';
-  $('micBtn').setAttribute('aria-label','Opna lyklaborð til að tala');
+  $('micBtn').setAttribute('aria-label','Taka upp og tala');
+}
+
+/* ---------- upptaka + umritun (fyrir iOS og vafra án Web Speech) ---------- */
+let mediaRec=null, audioChunks=[], recording=false, recStream=null;
+function setRecUI(on){
+  const w=$('micwrap').parentElement;
+  if(on){ w.classList.add('listening'); $('hint').innerHTML='<strong>Hlusta…</strong> ýttu aftur til að stöðva'; $('transcript').textContent=''; }
+  else { w.classList.remove('listening'); }
+}
+async function startRecording(){
+  if(recording) return;
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder==='undefined'){
+    $('hint').textContent='Vafrinn styður ekki upptöku — notaðu 🎤 á lyklaborðinu'; focusDictation(); return;
+  }
+  try{
+    recStream = await navigator.mediaDevices.getUserMedia({audio:true});
+  }catch(err){
+    $('hint').innerHTML='🔇 Leyfðu aðgang að hljóðnema og reyndu aftur'; return;
+  }
+  try{
+    audioChunks=[];
+    const mime = MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4'
+               : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
+    mediaRec = mime ? new MediaRecorder(recStream,{mimeType:mime}) : new MediaRecorder(recStream);
+    mediaRec.ondataavailable = e=>{ if(e.data && e.data.size) audioChunks.push(e.data); };
+    mediaRec.onstop = onRecStop;
+    mediaRec.start();
+    recording=true; setRecUI(true);
+  }catch(err){
+    if(recStream){ recStream.getTracks().forEach(t=>t.stop()); recStream=null; }
+    $('hint').textContent='Gat ekki tekið upp — notaðu 🎤 á lyklaborðinu'; focusDictation();
+  }
+}
+function stopRecording(){ if(mediaRec && recording){ try{ mediaRec.stop(); }catch(e){} } }
+async function onRecStop(){
+  recording=false; setRecUI(false);
+  if(recStream){ recStream.getTracks().forEach(t=>t.stop()); recStream=null; }
+  const type=(mediaRec && mediaRec.mimeType) || 'audio/mp4';
+  const blob=new Blob(audioChunks,{type});
+  if(!blob.size){ $('hint').textContent='Heyrði ekkert — reyndu aftur'; return; }
+  $('hint').innerHTML='<strong>Vinn úr tali…</strong>';
+  try{
+    const res=await fetch('/api/transcribe',{method:'POST', headers:{'content-type':type}, body:blob});
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.error || ('HTTP '+res.status));
+    $('hint').innerHTML='Ýttu á <strong>🎤</strong> og talaðu';
+    const text=(data.text||'').trim();
+    if(text) handleText(text);
+    else $('hint').textContent='Náði engu úr talinu — reyndu aftur';
+  }catch(err){
+    $('hint').textContent='⚠️ '+String(err.message||err);
+  }
 }
 
 function startListening(){
