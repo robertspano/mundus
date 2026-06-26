@@ -187,7 +187,7 @@
     <div class="transcript" id="transcript"></div>
 
     <div class="manual">
-      <input id="manualInput" placeholder="…eða skrifaðu hér" autocomplete="off" />
+      <input id="manualInput" placeholder="Skrifaðu eða talaðu með 🎤 hér" autocomplete="off" />
       <button id="manualBtn">Bæta við</button>
     </div>
 
@@ -662,6 +662,11 @@ $('manualInput').onkeydown=(e)=>{ if(e.key==='Enter'){ $('manualBtn').click(); }
 
 /* ---------- talgreining (Web Speech API) ---------- */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+// iOS Safari styður Web Speech API illa/óáreiðanlega — þar notum við frekar
+// hljóðnemann á lyklaborðinu (innbyggð iOS dictation), sem virkar alltaf.
+const isIOS = /iP(ad|hone|od)/.test(navigator.userAgent)
+  || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+const useWebSpeech = !!SR && !isIOS;
 let recog=null, listening=false, finalText='';
 const LANGS={is:'is-IS', en:'en-US'};
 
@@ -669,10 +674,23 @@ function updateLangBtn(){ $('langLbl').textContent = lang==='is'?'ÍS':'EN'; }
 updateLangBtn();
 $('langBtn').onclick=()=>{ lang = lang==='is'?'en':'is'; localStorage.setItem(LANGKEY,lang); updateLangBtn(); if(listening) stopListening(); };
 
-if(!SR){
-  $('unsupported').style.display='block';
-} else {
-  $('micBtn').onclick=()=> listening? stopListening() : startListening();
+// Beinir notanda í textareitinn svo lyklaborðið (með 🎤) birtist — fyrir iOS/óstudda vafra.
+function focusDictation(){
+  const i=$('manualInput');
+  i.focus();
+  try{ i.scrollIntoView({block:'center', behavior:'smooth'}); }catch(e){}
+  $('hint').innerHTML='Ýttu á <strong>🎤</strong> á lyklaborðinu og talaðu — svo „return"';
+}
+
+$('micBtn').onclick=()=>{
+  if(useWebSpeech){ listening? stopListening() : startListening(); }
+  else { focusDictation(); }
+};
+
+if(!useWebSpeech){
+  // engin stór talgreining hér — gerum lyklaborðs-leiðina ljósa
+  $('hint').innerHTML='Ýttu hér og talaðu með <strong>🎤</strong> á lyklaborðinu';
+  if(!SR) $('micBtn').setAttribute('aria-label','Opna lyklaborð til að tala');
 }
 
 function startListening(){
