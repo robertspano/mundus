@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="is">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#0b1020" />
+<title>Raddverkefni</title>
+<style>
+  :root{
+    --bg:#0b1020; --bg2:#121a30; --card:#161f3a; --card2:#1c2747;
+    --line:#26314f; --text:#eef2ff; --muted:#93a0c4; --faint:#5a678c;
+    --accent:#6d8bff; --accent2:#8a6dff;
+    --high:#ff5d73; --med:#ffb454; --low:#42c9a0;
+    --shadow:0 10px 30px rgba(0,0,0,.35);
+    --r:18px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0; height:100%}
+  body{
+    background:radial-gradient(120% 80% at 50% -10%, #1a2647 0%, var(--bg) 55%) fixed;
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    display:flex; justify-content:center;
+  }
+  .app{width:100%; max-width:520px; min-height:100dvh; padding:18px 16px 140px; position:relative}
+
+  header{display:flex; align-items:center; justify-content:space-between; gap:10px; margin:6px 2px 18px}
+  header h1{font-size:21px; margin:0; letter-spacing:-.02em; font-weight:700}
+  header h1 .dot{color:var(--accent)}
+  .langbtn{
+    background:var(--card); color:var(--muted); border:1px solid var(--line);
+    border-radius:999px; padding:7px 13px; font-size:13px; font-weight:600; cursor:pointer;
+    display:flex; align-items:center; gap:6px;
+  }
+  .langbtn:active{transform:scale(.96)}
+
+  /* ---- Capture card ---- */
+  .capture{
+    background:linear-gradient(180deg,var(--card),var(--card2));
+    border:1px solid var(--line); border-radius:24px; padding:22px 18px 20px;
+    box-shadow:var(--shadow); text-align:center; margin-bottom:16px;
+  }
+  .micwrap{position:relative; width:118px; height:118px; margin:4px auto 6px}
+  .pulse{position:absolute; inset:0; border-radius:50%; background:var(--accent); opacity:0; }
+  .listening .pulse{animation:pulse 1.6s ease-out infinite}
+  .listening .pulse.b{animation-delay:.5s}
+  @keyframes pulse{0%{transform:scale(.7); opacity:.45} 80%{transform:scale(1.5); opacity:0} 100%{opacity:0}}
+  .mic{
+    position:absolute; inset:0; width:118px; height:118px; border-radius:50%;
+    border:none; cursor:pointer; color:#fff; font-size:46px;
+    background:linear-gradient(145deg,var(--accent),var(--accent2));
+    box-shadow:0 12px 30px rgba(109,139,255,.45), inset 0 1px 0 rgba(255,255,255,.25);
+    display:flex; align-items:center; justify-content:center; transition:transform .12s;
+  }
+  .mic:active{transform:scale(.94)}
+  .listening .mic{background:linear-gradient(145deg,var(--high),#ff8a5d)}
+  .hint{color:var(--muted); font-size:15px; margin:8px 4px 0; min-height:22px; line-height:1.4}
+  .hint strong{color:var(--text)}
+  .transcript{
+    color:var(--text); font-size:17px; line-height:1.45; margin:10px 6px 0; min-height:0;
+    font-weight:500;
+  }
+  .transcript .interim{color:var(--faint)}
+
+  .unsupported{
+    background:#2a1c2c; border:1px solid #5a2b40; color:#ffc2cf; border-radius:14px;
+    padding:12px 14px; font-size:13.5px; margin:12px 2px 0; line-height:1.5; text-align:left; display:none;
+  }
+
+  /* manual entry */
+  .manual{display:flex; gap:8px; margin-top:14px}
+  .manual input{
+    flex:1; background:var(--bg2); border:1px solid var(--line); color:var(--text);
+    border-radius:14px; padding:13px 14px; font-size:15px; outline:none;
+  }
+  .manual input::placeholder{color:var(--faint)}
+  .manual input:focus{border-color:var(--accent)}
+  .manual button{
+    background:var(--accent); border:none; color:#fff; font-weight:700; font-size:15px;
+    border-radius:14px; padding:0 16px; cursor:pointer;
+  }
+  .manual button:active{transform:scale(.96)}
+
+  /* ---- Preview / confirm ---- */
+  .preview{
+    background:linear-gradient(180deg,var(--card2),var(--card));
+    border:1px solid var(--accent); border-radius:20px; padding:16px; margin-bottom:16px;
+    box-shadow:var(--shadow); animation:rise .25s ease;
+  }
+  @keyframes rise{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
+  .preview .pvlabel{font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--accent); font-weight:700; margin-bottom:8px}
+  .preview .titlefield{
+    width:100%; background:transparent; border:none; color:var(--text);
+    font-size:19px; font-weight:700; outline:none; padding:2px 0 8px; line-height:1.3;
+  }
+  .pvrow{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:4px}
+  .seg{display:inline-flex; background:var(--bg2); border:1px solid var(--line); border-radius:12px; overflow:hidden}
+  .seg button{
+    background:transparent; border:none; color:var(--muted); padding:9px 12px; font-size:13.5px;
+    font-weight:600; cursor:pointer; border-right:1px solid var(--line);
+  }
+  .seg button:last-child{border-right:none}
+  .seg button.on{color:#fff}
+  .seg button.on.high{background:var(--high)}
+  .seg button.on.med{background:var(--med); color:#3a2400}
+  .seg button.on.low{background:var(--low); color:#063528}
+  .datepill{
+    display:inline-flex; align-items:center; gap:6px; background:var(--bg2);
+    border:1px solid var(--line); border-radius:12px; padding:9px 12px; color:var(--text);
+    font-size:13.5px; font-weight:600; cursor:pointer;
+  }
+  .datepill input[type=datetime-local]{
+    position:absolute; opacity:0; width:0; height:0; pointer-events:none;
+  }
+  .pvactions{display:flex; gap:10px; margin-top:14px}
+  .btn{
+    flex:1; border:none; border-radius:14px; padding:14px; font-size:15.5px; font-weight:700; cursor:pointer;
+  }
+  .btn.save{background:linear-gradient(145deg,var(--accent),var(--accent2)); color:#fff}
+  .btn.cancel{background:var(--bg2); color:var(--muted); border:1px solid var(--line); flex:0 0 auto; padding:14px 18px}
+  .btn:active{transform:scale(.97)}
+
+  /* ---- list ---- */
+  .section{margin:18px 2px 8px; display:flex; align-items:center; gap:10px}
+  .section h2{font-size:13px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin:0; font-weight:700}
+  .section .count{color:var(--faint); font-size:12px}
+  .section .line{flex:1; height:1px; background:var(--line)}
+
+  .task{
+    display:flex; align-items:flex-start; gap:12px; background:var(--card);
+    border:1px solid var(--line); border-radius:16px; padding:14px; margin-bottom:10px;
+    position:relative; overflow:hidden; animation:rise .2s ease;
+  }
+  .task .stripe{position:absolute; left:0; top:0; bottom:0; width:4px}
+  .task.high .stripe{background:var(--high)} .task.med .stripe{background:var(--med)} .task.low .stripe{background:var(--low)}
+  .check{
+    flex:0 0 auto; width:24px; height:24px; border-radius:50%; border:2px solid var(--faint);
+    background:transparent; cursor:pointer; margin-top:1px; display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:14px; transition:.15s;
+  }
+  .task.done .check{background:var(--low); border-color:var(--low)}
+  .tmain{flex:1; min-width:0}
+  .ttitle{font-size:16px; font-weight:600; line-height:1.35; word-wrap:break-word}
+  .task.done .ttitle{color:var(--muted); text-decoration:line-through}
+  .tmeta{display:flex; flex-wrap:wrap; gap:6px 10px; margin-top:6px; font-size:12.5px; color:var(--muted)}
+  .tmeta .imp{font-weight:700}
+  .tmeta .imp.high{color:var(--high)} .tmeta .imp.med{color:var(--med)} .tmeta .imp.low{color:var(--low)}
+  .tmeta .overdue{color:var(--high); font-weight:700}
+  .del{flex:0 0 auto; background:transparent; border:none; color:var(--faint); font-size:20px; cursor:pointer; padding:2px 4px; line-height:1}
+  .del:active{color:var(--high)}
+
+  .empty{text-align:center; color:var(--faint); padding:34px 16px; font-size:14.5px; line-height:1.6}
+  .empty .big{font-size:34px; display:block; margin-bottom:8px}
+
+  .footer{position:fixed; bottom:0; left:0; right:0; display:flex; justify-content:center; pointer-events:none}
+  .footbar{
+    max-width:520px; width:100%; padding:10px 16px 16px;
+    background:linear-gradient(180deg,transparent, var(--bg) 40%);
+    display:flex; justify-content:space-between; align-items:center; pointer-events:auto;
+  }
+  .footbar .stat{font-size:12.5px; color:var(--faint)}
+  .footbar .clearbtn{background:transparent; border:none; color:var(--faint); font-size:12.5px; cursor:pointer; text-decoration:underline}
+
+  .toast{
+    position:fixed; left:50%; bottom:84px; transform:translateX(-50%) translateY(20px);
+    background:var(--card2); border:1px solid var(--line); color:var(--text);
+    padding:11px 16px; border-radius:999px; font-size:14px; font-weight:600;
+    box-shadow:var(--shadow); opacity:0; pointer-events:none; transition:.25s; z-index:50;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Raddverkefni<span class="dot">.</span></h1>
+    <button class="langbtn" id="langBtn" title="Skipta um tungumál">🌐 <span id="langLbl">ÍS</span></button>
+  </header>
+
+  <section class="capture" id="capture">
+    <div class="micwrap" id="micwrap">
+      <div class="pulse"></div><div class="pulse b"></div>
+      <button class="mic" id="micBtn" aria-label="Tala">🎤</button>
+    </div>
+    <div class="hint" id="hint">Ýttu og segðu verkefnið þitt</div>
+    <div class="transcript" id="transcript"></div>
+
+    <div class="manual">
+      <input id="manualInput" placeholder="…eða skrifaðu hér" autocomplete="off" />
+      <button id="manualBtn">Bæta við</button>
+    </div>
+
+    <div class="unsupported" id="unsupported">
+      ⚠️ Þessi vafri styður ekki talgreiningu. Notaðu Chrome eða Safari, eða skrifaðu verkefnið í reitinn að ofan.
+    </div>
+  </section>
+
+  <div id="previewSlot"></div>
+  <div id="list"></div>
+</div>
+
+<div class="footer"><div class="footbar">
+  <span class="stat" id="stat"></span>
+  <button class="clearbtn" id="clearDone">Hreinsa kláruð</button>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   Raddverkefni — einfalt raddstýrt verkefnaapp
+   Allt keyrir í vafranum. Engin þjónn, engin API-lyklar.
+   ============================================================ */
+
+/* ---------- Íslensk orðasöfn fyrir textaskilning ---------- */
+const MONTHS = {janúar:0,'febrúar':1,mars:2,'apríl':3,'maí':4,'júní':5,'júlí':6,'ágúst':7,september:8,'október':9,'nóvember':10,desember:11};
+const WEEKDAYS = { // getDay(): 0=sun .. 6=lau
+  sunnudag:0, manudag:1, 'mánudag':1, thridjudag:2, 'þriðjudag':2,
+  midvikudag:3, 'miðvikudag':3, fimmtudag:4, fostudag:5, 'föstudag':5, laugardag:6
+};
+const CARDINAL = {
+  'einn':1,'ein':1,'eitt':1,'einn':1,
+  'tveir':2,'tvær':2,'tvö':2,'tvo':2,'tveimur':2,
+  'þrír':3,'þrjár':3,'þrjú':3,'þrjá':3,'þremur':3,
+  'fjórir':4,'fjórar':4,'fjögur':4,'fjóra':4,'fjórum':4,
+  'fimm':5,'sex':6,'sjö':7,'átta':8,'níu':9,'tíu':10,
+  'ellefu':11,'tólf':12,'þrettán':13,'fjórtán':14,'fimmtán':15,'sextán':16,
+  'sautján':17,'átján':18,'nítján':19,'tuttugu':20
+};
+const ORDINAL = {
+  'fyrsta':1,'annan':2,'annað':2,'öðrum':2,'þriðja':3,'fjórða':4,'fimmta':5,'sjötta':6,
+  'sjöunda':7,'áttunda':8,'níunda':9,'tíunda':10,'ellefta':11,'tólfta':12,'þrettánda':13,
+  'fjórtánda':14,'fimmtánda':15,'sextánda':16,'sautjánda':17,'átjánda':18,'nítjánda':19,
+  'tuttugasta':20,'þrítugasta':30
+};
+
+/* ---------- Hjálparföll fyrir dagsetningar ---------- */
+function atMidnight(d){const x=new Date(d); x.setHours(0,0,0,0); return x;}
+function addDays(d,n){const x=new Date(d); x.setDate(x.getDate()+n); return x;}
+function nextWeekday(base, target, forceNext){
+  let diff=(target-base.getDay()+7)%7;
+  if(diff===0 && forceNext) diff=7;
+  return addDays(atMidnight(base), diff);
+}
+
+/* ---------- Aðalgreinir ----------
+   Skilar {title, when:Date|null, hasTime:bool, importance:'high'|'medium'|'low'} */
+function parseTaskInput(rawText, now){
+  now = now || new Date();
+  const original = (rawText||"").trim();
+  let lower = original.toLowerCase();
+  // skiptir gæsalöppum/táknum út, en heldur index-uppröðun fyrir titil
+  const remove = []; // [start,end) bil sem fjarlægjast úr titlinum
+  function cut(start,len){ remove.push([start,start+len]); }
+  function cutMatch(m){ if(m && m.index!=null) cut(m.index, m[0].length); }
+
+  /* ---- 1. Skipanir í byrjun (t.d. "minntu mig á að") fjarlægðar ---- */
+  const intros = [
+    'minntu mig á að','minntu mig á','minndu mig á að','minna mig á að',
+    'ég þarf að','ég ætla að','ég verð að','ég vil',
+    'muna eftir að','muna eftir','muna að','ekki gleyma að','bæta við',
+    'nýtt verkefni','setja á lista','minna á'
+  ];
+  for(const intro of intros){
+    if(lower.startsWith(intro+' ')){ cut(0,intro.length); break; }
+  }
+
+  /* ---- 2. Mikilvægi (athuga neitun fyrst) ---- */
+  let importance='medium';
+  const lowImp = /(ekki\s+(?:sérstaklega\s+)?(?:mikilvæg\w*|áríðand\w*|brýn\w*|aðkallandi))|(ó(?:mikilvæg\w*|áríðand\w*))|(líti(?:ð|l)?\s*mikilvæg\w*)|(lítilvæg\w*)|(má\s+bíða)|(skiptir\s+ekki\s+máli)|(engin\s+(?:flýtir|áhersla))|(lág\s*forgang\w*|lágt?\s+mikilvæg\w*)/;
+  const highImp = /(mjög\s+mikilvæg\w*)|(mjög\s+áríðandi)|(mjög\s+brýn\w*)|(mikilvæg\w*)|(áríðand\w*)|(aðkallandi)|(brýn[t]?)|(bráðnauðsynleg\w*)|(neyðarl?\w*)|(strax)|(há\s*forgang\w*|hátt?\s+mikilvæg\w*)|(\burgent\b)|(\bhigh\b)/;
+  const medImp = /(miðlungs)|(venjuleg\w*)|(\bmedium\b)/;
+  let m;
+  if((m=lower.match(lowImp))){ importance='low'; cutMatch(m); }
+  else if((m=lower.match(highImp))){ importance='high'; cutMatch(m); }
+  else if((m=lower.match(medImp))){ importance='medium'; cutMatch(m); }
+
+  /* ---- 3. Tími ---- */
+  let when=null, hasTime=false, hh=null, mm=0, clockSpoken=false;
+  function wordNum(w){ if(w==null) return null; if(/^\d+$/.test(w)) return parseInt(w,10); return CARDINAL[w]!=null?CARDINAL[w]:null; }
+
+  // (klukkan) hálf X  -> (X-1):30   ("hálf tvö" = 1:30)
+  let t;
+  if((t=lower.match(/(?:(?:klukkan|kl\.?)\s+)?hálf\s+([a-záéíóúýþæöð]+|\d{1,2})/))){
+    const n=wordNum(t[1]); if(n!=null && n>=1 && n<=24){ hh=(n-1+24)%24; mm=30; hasTime=true; clockSpoken=true; cutMatch(t); }
+  }
+  // (klukkan) korter í/yfir X
+  if(!hasTime && (t=lower.match(/(?:(?:klukkan|kl\.?)\s+)?korter\s+(í|yfir)\s+([a-záéíóúýþæöð]+|\d{1,2})/))){
+    const n=wordNum(t[2]); if(n!=null && n>=1 && n<=24){ if(t[1]==='í'){hh=(n-1+24)%24;mm=45;} else {hh=n%24;mm=15;} hasTime=true; clockSpoken=true; cutMatch(t); }
+  }
+  // klukkan X(:MM)
+  if(!hasTime && (t=lower.match(/(?:klukkan|kl\.?)\s+([a-záéíóúýþæöð]+|\d{1,2})(?:[:\.](\d{2}))?/))){
+    const n=wordNum(t[1]); if(n!=null && n>=0 && n<=24){ hh=n%24; mm=(t[2]&&+t[2]<60)?+t[2]:0; hasTime=true; clockSpoken=true; cutMatch(t); }
+  }
+  // bert 24-klst form "16:30"
+  if(!hasTime && (t=lower.match(/\b([01]?\d|2[0-3])[:\.](\d{2})\b/))){
+    hh=parseInt(t[1],10); mm=parseInt(t[2],10); hasTime=true; cutMatch(t);
+  }
+  // orðasambönd fyrir tíma dags
+  let dayPartShift=0; // hve marga daga á að færa pga "annað kvöld" o.þ.h.
+  const dayParts=[
+    {re:/í\s+hádeginu(?![a-záéíóúýþæöð])|á\s+hádegi(?![a-záéíóúýþæöð])/, hh:12, mm:0, shift:0},
+    {re:/annað\s+kvöld/, hh:20, mm:0, shift:1},
+    {re:/í\s+kvöld/, hh:20, mm:0, shift:0},
+    {re:/í\s+fyrramálið|í\s+morgunsárið/, hh:8, mm:0, shift:1},
+    {re:/í\s+morgun(?![a-záéíóúýþæöð])/, hh:9, mm:0, shift:0},
+    {re:/síðdegis|eftir\s+hádegi/, hh:15, mm:0, shift:0}
+  ];
+  if(!hasTime){
+    for(const dp of dayParts){ if((m=lower.match(dp.re))){ hh=dp.hh; mm=dp.mm; hasTime=true; dayPartShift=dp.shift; cutMatch(m); break; } }
+  }
+
+  // AM/PM-ágiskun fyrir talaðan klukkutíma (íslenska notar ekki f.h./e.h.):
+  // "hálf tvö" / "klukkan 5" á dagvinnutíma þýðir nær alltaf eftir hádegi.
+  // Tími-dags orðin eru líka klippt úr titlinum þó þau séu bara vísbending.
+  if(hasTime && clockSpoken){
+    const pmM=lower.match(/(annað\s+kvöld|í\s+kvöld|síðdegis|seinnipart|eftir\s+hádegi|í\s+nótt|um\s+kvöldið)/);
+    const amM=lower.match(/(í\s+fyrramálið|í\s+morgunsárið|í\s+morgun(?![a-záéíóúýþæöð])|að\s+morgni|um\s+morguninn|árla)/);
+    if(pmM){ if(hh!=null && hh<12) hh+=12; if(/annað\s+kvöld/.test(pmM[0])) dayPartShift=1; cutMatch(pmM); }
+    else if(amM){ cutMatch(amM); }
+    else if(hh!=null && hh>=1 && hh<=6){ hh+=12; } // 1–6 -> eftir hádegi sjálfgefið
+  }
+
+  /* ---- 4. Dagsetning ---- */
+  function setWhen(d){ when=d; }
+  const today=atMidnight(now);
+
+  // tiltekin dagsetning: "3. júlí" / "þriðja júlí" / "3 júlí"
+  const monthNames=Object.keys(MONTHS).join('|');
+  let dm;
+  if((dm=lower.match(new RegExp('(\\d{1,2})\\.?\\s+('+monthNames+')')))){
+    const day=parseInt(dm[1],10), mon=MONTHS[dm[2]];
+    if(day>=1 && day<=31){
+      let y=now.getFullYear(); let cand=new Date(y,mon,day);
+      if(atMidnight(cand)<today) cand=new Date(y+1,mon,day);
+      setWhen(atMidnight(cand)); cutMatch(dm);
+    }
+  } else if((dm=lower.match(new RegExp('([a-záéíóúýþæöð]+)\\s+('+monthNames+')')))){
+    if(ORDINAL[dm[1]]!=null){
+      const day=ORDINAL[dm[1]], mon=MONTHS[dm[2]];
+      if(day>=1 && day<=31){
+        let y=now.getFullYear(); let cand=new Date(y,mon,day);
+        if(atMidnight(cand)<today) cand=new Date(y+1,mon,day);
+        setWhen(atMidnight(cand)); cutMatch(dm);
+      }
+    }
+  }
+
+  // "eftir X daga / X vikur / mánuð"
+  if(!when && (m=lower.match(/eftir\s+([a-záéíóúýþæöð]+|\d+)\s+(vikum|vikur|viku|dögum|sólarhring\w*|daga|dag|mánuði|mánuð)/))){
+    const n=wordNum(m[1]); const unit=m[2];
+    if(n!=null){
+      if(/viku/.test(unit)) setWhen(addDays(today,n*7));        // vikur/viku/vikum
+      else if(/mán/.test(unit)) setWhen(addDays(today,n*30));   // mánuð(i)
+      else setWhen(addDays(today,n));                            // dag/daga/dögum/sólarhring
+      cutMatch(m);
+    }
+  }
+  if(!when && (m=lower.match(/eftir\s+(viku|hálfan\s+mánuð|mánuð|mánuði|helgi)/))){
+    const u=m[1];
+    if(/viku/.test(u)) setWhen(addDays(today,7));
+    else if(/hálfan/.test(u)) setWhen(addDays(today,14));
+    else if(/helgi/.test(u)) setWhen(addDays(today,7));
+    else setWhen(addDays(today,30));
+    cutMatch(m);
+  }
+
+  // föst orð  (ATH: \b virkar ekki á eftir ísl. stöfum eins og ð/þ/á — notum lookahead)
+  const notLetter='(?![a-záéíóúýþæöð])';
+  if(!when){
+    if((m=lower.match(new RegExp('í\\s+dag'+notLetter)))){ setWhen(today); cutMatch(m); }
+    else if((m=lower.match(new RegExp('(?:á\\s+morgun|ámorgun)'+notLetter)))){ setWhen(addDays(today,1)); cutMatch(m); }
+    else if((m=lower.match(new RegExp('í\\s+fyrramálið'+notLetter)))){ setWhen(addDays(today,1)); cutMatch(m); }
+    else if((m=lower.match(/(?:í\s+)?næstu\s+viku(?:nni)?/))){ setWhen(nextWeekday(now,1,true)); cutMatch(m); }
+    else if((m=lower.match(/um\s+helgi(?:na)?|um\s+næstu\s+helgi/))){ setWhen(nextWeekday(now,6,false)); cutMatch(m); }
+    else if((m=lower.match(/í\s+lok\s+vikunnar|fyrir\s+helgi/))){ setWhen(nextWeekday(now,5,false)); cutMatch(m); }
+  }
+
+  // vikudagar: "á mánudaginn", "næsta þriðjudag", "um fimmtudaginn", "fimmtudag"
+  // ATH: notum lookahead-mörk svo "fimmtudag" sé ekki klippt úr "fimmtudagsverð"/"mánudagur".
+  if(!when){
+    const wdNames=Object.keys(WEEKDAYS).join('|');
+    const wdRe=new RegExp('(?:næsta\\s+|næstkomandi\\s+|á\\s+næsta\\s+|á\\s+|um\\s+|í\\s+|fyrir\\s+|til\\s+)?('+wdNames+')(?:inn|in)?(?![a-záéíóúýþæöð])');
+    if((m=lower.match(wdRe))){
+      const forceNext=/næst/.test(m[0]);
+      setWhen(nextWeekday(now, WEEKDAYS[m[1]], forceNext));
+      cutMatch(m);
+    }
+  }
+
+  // ef tími fannst en engin dagur -> í dag (eða á morgun ef tími liðinn)
+  if(hasTime){
+    let base = when ? when : today;
+    if(!when) base = addDays(base, dayPartShift); // shift bara þegar engin sérstök dagsetning
+    base = new Date(base); base.setHours(hh, mm, 0, 0);
+    if(!when && base < now){ base = addDays(base,1); } // tími liðinn í dag -> á morgun
+    when = base;
+  } else if(when){
+    // dagur án tíma: setjum á 09:00 til geymslu en merkjum allan daginn
+    const d=new Date(when); d.setHours(9,0,0,0); when=d;
+  }
+
+  /* ---- 5. Titill: fjarlægja öll bil sem voru notuð ---- */
+  remove.sort((a,b)=>a[0]-b[0]);
+  let title='';
+  let cur=0;
+  for(const [s,e] of remove){
+    if(s>cur) title += original.slice(cur, s);
+    cur=Math.max(cur,e);
+  }
+  title += original.slice(cur);
+
+  // hreinsun: kommur/semíkommur sem skildust eftir verða að bilum, fjarlægja stök
+  // tengiorð/forsetningar og greinarmerki í endum.
+  title = title.replace(/[;,]+/g,' ').replace(/\s+/g,' ').trim();
+  title = title.replace(/\s+([.!?])/g,'$1');
+  const edgeStart = /^(?:og|að|þá|svo|núna|á|í|um|kl\.?|klukkan|þ\.e\.?|takk|please)\s+/i;
+  const edgeEnd   = /\s+(?:og|að|þá|svo|á|í|um|fyrir|til|kl\.?|klukkan|takk|please)$/i;
+  let prev;
+  do{
+    prev=title;
+    title = title.replace(edgeStart,'').replace(edgeEnd,'').replace(/^[\s.,!?\-–]+|[\s.,\-–]+$/g,'').trim();
+  } while(title!==prev && title);
+
+  if(title){ title = title.charAt(0).toUpperCase()+title.slice(1); }
+
+  return { title, when, hasTime, importance };
+}
+
+/* ============================================================
+   UI + ástand
+   ============================================================ */
+const KEY='raddverkefni.v1';
+const LANGKEY='raddverkefni.lang';
+let tasks = load();
+let lang = localStorage.getItem(LANGKEY) || 'is';
+let pending = null; // verkefni í forskoðun
+
+function load(){
+  try{
+    const data=JSON.parse(localStorage.getItem(KEY));
+    if(!Array.isArray(data)) return [];
+    // hreinsa/staðla hverja færslu svo skemmd gögn brjóti ekki appið
+    return data.filter(t=>t&&typeof t==='object').map(t=>({
+      id: t.id ? String(t.id) : 'id'+Math.random().toString(36).slice(2)+Date.now().toString(36),
+      title: typeof t.title==='string' ? t.title : '',
+      when: t.when ? String(t.when) : null,
+      hasTime: !!t.hasTime,
+      importance: (t.importance==='high'||t.importance==='low') ? t.importance : 'medium',
+      done: !!t.done
+    }));
+  }catch(e){ return []; }
+}
+function save(){ localStorage.setItem(KEY, JSON.stringify(tasks)); }
+
+const $=id=>document.getElementById(id);
+
+/* ---------- dagsetningar í texta ---------- */
+const IS_DAYS=['sunnudag','mánudag','þriðjudag','miðvikudag','fimmtudag','föstudag','laugardag'];
+const IS_MONTHS=['jan','feb','mar','apr','maí','jún','júl','ágú','sep','okt','nóv','des'];
+function dayKey(d){ const x=atMidnight(d); return x.getFullYear()+'-'+x.getMonth()+'-'+x.getDate(); }
+function fmtWhen(t){
+  if(!t.when) return 'Engin dagsetning';
+  const d=new Date(t.when);
+  const today=atMidnight(new Date());
+  const diff=Math.round((atMidnight(d)-today)/86400000);
+  let day;
+  if(diff===0) day='í dag';
+  else if(diff===1) day='á morgun';
+  else if(diff===-1) day='í gær';
+  else if(diff>1 && diff<7) day=IS_DAYS[d.getDay()]+'inn';
+  else day=d.getDate()+'. '+IS_MONTHS[d.getMonth()];
+  if(t.hasTime){
+    const hh=String(d.getHours()).padStart(2,'0'), mm=String(d.getMinutes()).padStart(2,'0');
+    return day+' kl. '+hh+':'+mm;
+  }
+  return day;
+}
+function sectionLabel(t){
+  if(!t.when) return {key:'zzz', label:'Engin dagsetning'};
+  const d=new Date(t.when), today=atMidnight(new Date());
+  const diff=Math.round((atMidnight(d)-today)/86400000);
+  if(diff<0) return {key:'000', label:'Útrunnið'};
+  if(diff===0) return {key:'001', label:'Í dag'};
+  if(diff===1) return {key:'002', label:'Á morgun'};
+  return {key:'003'+dayKey(d), label:fmtWhen({when:d,hasTime:false})};
+}
+const IMP_LABEL={high:'Hátt',medium:'Miðlungs',low:'Lágt'};
+const IMP_ORDER={high:0,medium:1,low:2};
+
+/* ---------- render ---------- */
+function render(){
+  renderPreview();
+  const list=$('list');
+  list.innerHTML='';
+
+  const active=tasks.filter(t=>!t.done);
+  const done=tasks.filter(t=>t.done);
+
+  if(tasks.length===0){
+    list.innerHTML='<div class="empty"><span class="big">🎙️</span>Engin verkefni ennþá.<br>ýttu á hnappinn og segðu t.d.<br><em>„Hringja í mömmu á morgun, mjög mikilvægt“</em></div>';
+  } else {
+    // hópa virk eftir dagsetningu
+    const groups={};
+    for(const t of active){
+      const s=sectionLabel(t);
+      (groups[s.key]=groups[s.key]||{label:s.label,items:[]}).items.push(t);
+    }
+    Object.keys(groups).sort().forEach(k=>{
+      const g=groups[k];
+      g.items.sort((a,b)=>{
+        const aw=a.when?new Date(a.when).getTime():Infinity, bw=b.when?new Date(b.when).getTime():Infinity;
+        if(aw!==bw) return aw-bw;
+        return IMP_ORDER[a.importance]-IMP_ORDER[b.importance];
+      });
+      list.appendChild(sectionEl(g.label, g.items.length));
+      g.items.forEach(t=>list.appendChild(taskEl(t)));
+    });
+    if(done.length){
+      list.appendChild(sectionEl('Klárað', done.length));
+      done.forEach(t=>list.appendChild(taskEl(t)));
+    }
+  }
+
+  const left=active.length;
+  $('stat').textContent = tasks.length? (left+' eftir · '+done.length+' klárað') : '';
+  $('clearDone').style.visibility = done.length? 'visible':'hidden';
+}
+
+function sectionEl(label, count){
+  const el=document.createElement('div'); el.className='section';
+  el.innerHTML='<h2></h2><span class="count"></span><span class="line"></span>';
+  el.querySelector('h2').textContent=label;
+  el.querySelector('.count').textContent=count;
+  return el;
+}
+
+function taskEl(t){
+  const el=document.createElement('div');
+  el.className='task '+(t.importance==='high'?'high':t.importance==='low'?'low':'med')+(t.done?' done':'');
+  // dagsverkefni (án tíma) verða "útrunnin" fyrst þegar dagurinn er liðinn, ekki kl. 09 á deginum
+  const overdue = t.when && !t.done && (t.hasTime
+    ? new Date(t.when) < new Date()
+    : atMidnight(new Date(t.when)) < atMidnight(new Date()));
+  el.innerHTML =
+    '<div class="stripe"></div>'+
+    '<button class="check" aria-label="'+(t.done?'Afmerkja sem klárað':'Merkja sem klárað')+'">'+(t.done?'✓':'')+'</button>'+
+    '<div class="tmain">'+
+      '<div class="ttitle"></div>'+
+      '<div class="tmeta">'+
+        '<span class="imp '+(t.importance==='high'?'high':t.importance==='low'?'low':'med')+'">'+IMP_LABEL[t.importance]+'</span>'+
+        '<span class="'+(overdue?'overdue':'')+'">'+esc(fmtWhen(t))+'</span>'+
+      '</div>'+
+    '</div>'+
+    '<button class="del" aria-label="Eyða">×</button>';
+  el.querySelector('.ttitle').textContent=t.title;
+  el.querySelector('.check').onclick=()=>{ t.done=!t.done; save(); render(); };
+  el.querySelector('.del').onclick=()=>{ tasks=tasks.filter(x=>x.id!==t.id); save(); render(); toast('Eyðt'); };
+  return el;
+}
+function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+/* ---------- forskoðun (staðfesting) ---------- */
+function showPreview(parsed){
+  pending = {
+    id: 'id'+Math.random().toString(36).slice(2)+Date.now().toString(36),
+    title: parsed.title || '',
+    when: parsed.when ? new Date(parsed.when).toISOString() : null,
+    hasTime: parsed.hasTime,
+    importance: parsed.importance,
+    done:false
+  };
+  render();
+  const ti=document.querySelector('.titlefield'); if(ti && !pending.title){ ti.focus(); }
+}
+function renderPreview(){
+  const slot=$('previewSlot'); slot.innerHTML='';
+  if(!pending) return;
+  const p=pending;
+  const el=document.createElement('div'); el.className='preview';
+  el.innerHTML =
+    '<div class="pvlabel">Nýtt verkefni</div>'+
+    '<input class="titlefield" placeholder="Hvað á að gera?" />'+
+    '<div class="pvrow">'+
+      '<div class="seg imp">'+
+        '<button data-imp="high" class="high">Hátt</button>'+
+        '<button data-imp="medium" class="med">Miðlungs</button>'+
+        '<button data-imp="low" class="low">Lágt</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="pvrow">'+
+      '<label class="datepill">📅 <span class="dlabel"></span>'+
+        '<input type="datetime-local" class="dtin" />'+
+      '</label>'+
+      '<div class="seg">'+
+        '<button data-q="today">Í dag</button>'+
+        '<button data-q="tomorrow">Á morgun</button>'+
+        '<button data-q="clear">✕</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="pvactions">'+
+      '<button class="btn cancel">Hætta</button>'+
+      '<button class="btn save">Vista verkefni</button>'+
+    '</div>';
+  slot.appendChild(el);
+
+  const ti=el.querySelector('.titlefield'); ti.value=p.title;
+  ti.oninput=()=>{ p.title=ti.value; };
+  ti.onkeydown=(e)=>{
+    if(e.key==='Enter'){ e.preventDefault(); commitPending(); }
+    else if(e.key==='Escape'){ e.preventDefault(); pending=null; render(); const mb=$('micBtn'); if(mb) mb.focus(); }
+  };
+
+  el.querySelectorAll('.seg.imp button').forEach(b=>{
+    b.classList.toggle('on', b.dataset.imp===p.importance);
+    b.onclick=()=>{ p.importance=b.dataset.imp; renderPreview(); };
+  });
+
+  const dlabel=el.querySelector('.dlabel');
+  dlabel.textContent = p.when? fmtWhen({when:new Date(p.when),hasTime:p.hasTime}) : 'Engin dagsetning';
+  const dtin=el.querySelector('.dtin');
+  if(p.when){ dtin.value=toLocalInput(new Date(p.when)); }
+  el.querySelector('.datepill').onclick=(e)=>{ if(e.target!==dtin){ dtin.showPicker? dtin.showPicker(): dtin.focus(); } };
+  dtin.onchange=()=>{ if(dtin.value){ p.when=new Date(dtin.value).toISOString(); p.hasTime=true; } renderPreview(); };
+
+  el.querySelectorAll('.seg button[data-q]').forEach(b=>{
+    b.onclick=()=>{
+      const today=atMidnight(new Date());
+      if(b.dataset.q==='today'){ const d=new Date(today); d.setHours(9,0,0,0); p.when=d.toISOString(); p.hasTime=false; }
+      else if(b.dataset.q==='tomorrow'){ const d=addDays(today,1); d.setHours(9,0,0,0); p.when=d.toISOString(); p.hasTime=false; }
+      else { p.when=null; p.hasTime=false; }
+      renderPreview();
+    };
+  });
+
+  el.querySelector('.cancel').onclick=()=>{ pending=null; render(); };
+  el.querySelector('.save').onclick=()=>commitPending();
+}
+function toLocalInput(d){
+  const p=n=>String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes());
+}
+function commitPending(){
+  if(!pending) return;
+  if(!pending.title.trim()){ toast('Skrifaðu hvað á að gera'); const ti=document.querySelector('.titlefield'); ti&&ti.focus(); return; }
+  tasks.push(pending);
+  pending=null;
+  save(); render(); toast('Vistað ✓');
+}
+
+/* ---------- inntak: tal & texti ---------- */
+function handleText(text){
+  if(!text || !text.trim()) return;
+  const parsed=parseTaskInput(text, new Date());
+  showPreview(parsed);
+}
+
+$('manualBtn').onclick=()=>{ const i=$('manualInput'); handleText(i.value); i.value=''; };
+$('manualInput').onkeydown=(e)=>{ if(e.key==='Enter'){ $('manualBtn').click(); } };
+
+/* ---------- talgreining (Web Speech API) ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recog=null, listening=false, finalText='';
+const LANGS={is:'is-IS', en:'en-US'};
+
+function updateLangBtn(){ $('langLbl').textContent = lang==='is'?'ÍS':'EN'; }
+updateLangBtn();
+$('langBtn').onclick=()=>{ lang = lang==='is'?'en':'is'; localStorage.setItem(LANGKEY,lang); updateLangBtn(); if(listening) stopListening(); };
+
+if(!SR){
+  $('unsupported').style.display='block';
+} else {
+  $('micBtn').onclick=()=> listening? stopListening() : startListening();
+}
+
+function startListening(){
+  if(listening) return; // varna tvöfaldri ræsingu við hraða smelli
+  try{
+    listening=true; // setjum strax (synchronously) svo annar smellur stöðvi frekar en að ræsa nýtt
+    recog=new SR();
+    recog.lang=LANGS[lang];
+    recog.interimResults=true;
+    recog.continuous=false;
+    recog.maxAlternatives=1;
+    finalText='';
+    $('micwrap').parentElement.classList.add('listening');
+    $('hint').innerHTML='<strong>Hlusta…</strong> segðu verkefnið';
+    $('transcript').textContent='';
+    recog.onstart=()=>{ $('micwrap').parentElement.classList.add('listening'); };
+    recog.onresult=(e)=>{
+      let interim='';
+      for(let i=e.resultIndex;i<e.results.length;i++){
+        const r=e.results[i];
+        if(r.isFinal) finalText+=r[0].transcript; else interim+=r[0].transcript;
+      }
+      $('transcript').innerHTML = esc(finalText)+'<span class="interim">'+esc(interim)+'</span>';
+    };
+    recog.onerror=(e)=>{
+      listening=false; $('micwrap').parentElement.classList.remove('listening');
+      if(e.error==='not-allowed'||e.error==='service-not-allowed'){
+        $('hint').innerHTML='🔇 Leyfðu aðgang að hljóðnema í vafranum';
+      } else if(e.error==='no-speech'){
+        $('hint').textContent='Heyrði ekkert — reyndu aftur';
+      } else if(e.error==='language-not-supported'){
+        $('hint').innerHTML='Talgreining styður ekki íslensku hér — prófaðu EN eða skrifaðu';
+      } else {
+        $('hint').textContent='Villa: '+e.error;
+      }
+    };
+    recog.onend=()=>{
+      listening=false; $('micwrap').parentElement.classList.remove('listening');
+      const said=finalText.trim();
+      if(said){ $('hint').textContent='Ýttu og segðu verkefnið þitt'; $('transcript').textContent=''; handleText(said); }
+      else { $('hint').textContent='Ýttu og segðu verkefnið þitt'; }
+    };
+    recog.start();
+  }catch(err){
+    listening=false; $('micwrap').parentElement.classList.remove('listening');
+    $('hint').textContent='Gat ekki ræst talgreiningu';
+  }
+}
+function stopListening(){ if(recog && listening){ try{recog.stop();}catch(e){} } }
+
+/* ---------- annað ---------- */
+let toastT;
+function toast(msg){ const el=$('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),1600); }
+$('clearDone').onclick=()=>{ tasks=tasks.filter(t=>!t.done); save(); render(); toast('Hreinsað'); };
+
+// gera greini aðgengilegan fyrir prófanir
+window.parseTaskInput=parseTaskInput;
+
+render();
+</script>
+</body>
+</html>
